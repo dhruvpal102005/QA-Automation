@@ -14,16 +14,35 @@ def env_config():
 
 @pytest.fixture(scope="function")
 def browser_context(env_config):
-    """Fixture to handle browser specifics, including mobile emulation."""
+    """Fixture to handle browser specifics, including mobile emulation and BrowserStack."""
     with sync_playwright() as p:
-        browser_type = getattr(p, env_config["browser"])
+        # Check if we are using BrowserStack
+        if os.getenv("BROWSERSTACK") == "true":
+            # BrowserStack capabilities
+            caps = {
+                'browser': 'chrome',
+                'browser_version': 'latest',
+                'os': 'osx',
+                'os_version': 'Ventura',
+                'name': 'WorkFlow Pro: Project Creation Flow',
+                'build': 'Bynry-QA-Case-Study',
+                'browserstack.user': os.getenv('BS_USER', 'your_username'),
+                'browserstack.key': os.getenv('BS_KEY', 'your_key')
+            }
+            # Construct BrowserStack URL
+            bs_url = f"wss://cdp.browserstack.com/playwright?caps={caps}"
+            browser = p.chromium.connect(bs_url)
+            context = browser.new_context()
         
-        # Check if mobile emulation is requested
-        if os.getenv("MOBILE") == "true":
+        # Local Mobile Emulation
+        elif os.getenv("MOBILE") == "true":
             device = p.devices["iPhone 13"]
-            browser = browser_type.launch(headless=True)
+            browser = p.chromium.launch(headless=True)
             context = browser.new_context(**device)
+        
+        # Local Desktop
         else:
+            browser_type = getattr(p, env_config["browser"])
             browser = browser_type.launch(headless=True)
             context = browser.new_context(viewport={'width': 1280, 'height': 720})
         

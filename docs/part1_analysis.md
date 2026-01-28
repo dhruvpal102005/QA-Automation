@@ -6,6 +6,8 @@
 3. **Implicit Timing Dependencies**: The test assumes `.welcome-message` is visible immediately. If there's an animation or secondary API call, the test will fail.
 4. **Tenant Isolation Check**: In `test_multi_tenant_access`, `page.locator(".project-card").all()` might return an empty list if the cards haven't rendered yet, and the `for` loop would pass silently even if no data is shown.
 5. **No Visual State Handling**: CI environments often have different viewport sizes, which can cause elements to be hidden or require scrolling.
+6. **2FA Blocking**: The context mentions 2FA. If the test doesn't have a way to handle the 2FA prompt (either by mocking or using a Master Key), it will time out and fail in CI.
+7. **Dynamic Loading Latency**: Dashboard elements load via secondary API calls. A simple "is_visible" check might fail if it runs while the spinner is still active.
 
 ## Root Causes: CI/CD vs. Local Environment
 1. **Resource Constraints**: CI runners (GitHub Actions, Jenkins) usually have fewer CPU/RAM resources than a local developer machine, leading to slower page renders and API responses.
@@ -18,3 +20,5 @@
 - Implement **Explicit Waits** for specific network responses or element states.
 - Use **Page Object Model (POM)** to separate selectors from logic (implemented in Part 2).
 - Add **Browser Context** configuration for consistent viewports.
+- **2FA Recommendation**: Implement a `TOTP` utility or a "Mock 2FA" header for the test environment to bypass manual verification hurdles.
+- **Loading State Handling**: Use `page.wait_for_selector(".spinner", state="detached")` or wait for specific network responses using `page.wait_for_response()`.
